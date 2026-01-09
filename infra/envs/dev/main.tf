@@ -1,11 +1,3 @@
-variable "aws_region" {
-  default = "ap-south-1"
-}
-
-variable "env" {
-  default = "dev"
-}
-
 module "networking" {
   source = "../../modules/networking"
   env    = var.env
