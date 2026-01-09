@@ -19,10 +19,11 @@ module "messaging" {
 }
 
 module "compute" {
-  source = "../../modules/compute"
-  env    = var.env
-  vpc_id = module.networking.vpc_id
+  source         = "../../modules/compute"
+  env            = var.env
+  vpc_id         = module.networking.vpc_id
   public_subnets = module.networking.public_subnets
+  queue_url      = module.messaging.jobs_queue_url
 }
 
 module "orchestration" {

@@ -10,3 +10,7 @@ resource "aws_sqs_queue" "jobs" {
     maxReceiveCount     = 3
   })
 }
+
+output "jobs_queue_url" {
+  value = aws_sqs_queue.jobs.url
+}
