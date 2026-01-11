@@ -22,6 +22,27 @@ jobs:
         run: terraform init
         working-directory: infra/envs/dev
 
+      - name: Build Lambda packages
+        run: |
+          cd services/lambdas/dispatcher
+          pip install boto3 -t .
+          zip -r dispatcher.zip .
+          mv dispatcher.zip ../../../infra/modules/orchestration/
+
+          cd ../validate_input
+          zip -r validate-input.zip .
+          mv validate-input.zip ../../../infra/modules/orchestration/
+
+          cd ../detect_type
+          zip -r detect-type.zip .
+          mv detect-type.zip ../../../infra/modules/orchestration/
+
+          cd ../update_status
+          pip install boto3 -t .
+          zip -r update-status.zip .
+          mv update-status.zip ../../../infra/modules/orchestration/
+
+
       - name: Terraform Apply
         run: terraform apply -auto-approve
         working-directory: infra/envs/dev
