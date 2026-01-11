@@ -29,4 +29,5 @@ module "compute" {
 module "orchestration" {
   source = "../../modules/orchestration"
   env    = var.env
+  jobs_queue_arn = module.messaging.jobs_queue_arn
 }
