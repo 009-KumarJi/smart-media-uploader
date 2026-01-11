@@ -24,6 +24,8 @@ module "compute" {
   vpc_id         = module.networking.vpc_id
   public_subnets = module.networking.public_subnets
   queue_url      = module.messaging.jobs_queue_url
+  # expose worker repos
+  # nothing to pass in yet, just outputs
 }
 
 module "orchestration" {
