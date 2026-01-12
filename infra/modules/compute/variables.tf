@@ -17,3 +17,7 @@ variable "queue_url" {
   description = "SQS jobs queue URL"
   type        = string
 }
+
+variable "aws_region" {
+  type = string
+}

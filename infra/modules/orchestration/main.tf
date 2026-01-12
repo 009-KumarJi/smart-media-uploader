@@ -23,8 +23,18 @@ resource "aws_iam_role_policy" "step_fn_policy" {
         Effect = "Allow"
         Action = [
           "lambda:InvokeFunction",
+
           "ecs:RunTask",
           "ecs:StopTask",
+          "ecs:DescribeTasks",
+
+          "iam:PassRole",
+
+          "events:CreateRule",
+          "events:PutRule",
+          "events:PutTargets",
+          "events:DescribeRule",
+
           "dynamodb:UpdateItem",
           "sqs:SendMessage"
         ]

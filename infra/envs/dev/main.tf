@@ -24,12 +24,17 @@ module "compute" {
   vpc_id         = module.networking.vpc_id
   public_subnets = module.networking.public_subnets
   queue_url      = module.messaging.jobs_queue_url
+  aws_region     = var.aws_region
   # expose worker repos
   # nothing to pass in yet, just outputs
 }
 
 module "orchestration" {
-  source = "../../modules/orchestration"
-  env    = var.env
-  jobs_queue_arn = module.messaging.jobs_queue_arn
+  source          = "../../modules/orchestration"
+  env             = var.env
+  jobs_queue_arn  = module.messaging.jobs_queue_arn
+
+  ecs_cluster_arn     = module.compute.ecs_cluster_arn
+  transcode_task_arn  = module.compute.transcode_task_arn
+  public_subnets      = module.networking.public_subnets
 }

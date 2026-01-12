@@ -45,8 +45,50 @@ resource "aws_sfn_state_machine" "pipeline" {
       }
 
       ImagePipeline = {
-        Type = "Pass"
-        Result = { "message": "image pipeline placeholder" }
+        Type     = "Task"
+        Resource = "arn:aws:states:::ecs:runTask.sync"
+
+        Parameters = {
+          Cluster        = var.ecs_cluster_arn
+          LaunchType     = "FARGATE"
+          TaskDefinition = var.transcode_task_arn
+
+          NetworkConfiguration = {
+            AwsvpcConfiguration = {
+              Subnets        = var.public_subnets
+              AssignPublicIp = "ENABLED"
+            }
+          }
+
+          Overrides = {
+            ContainerOverrides = [
+              {
+                Name = "transcode"
+                Environment = [
+                  {
+                    Name = "JOB_ID"
+                    "Value.$" = "$.jobId"
+                  },
+                  {
+                    Name = "INPUT_KEY"
+                    "Value.$" = "$.inputKey"
+                  },
+                  {
+                    Name  = "OUTPUT_KEY"
+                    Value = "s3://smmu-${var.env}-processed-media/output.mp4"
+                  },
+                  {
+                    Name  = "JOBS_TABLE"
+                    Value = "smmu-${var.env}-jobs"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+
+        ResultPath = "$.ecs" 
+
         Next = "MarkCompleted"
       }
 
