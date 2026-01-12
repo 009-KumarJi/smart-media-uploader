@@ -454,55 +454,146 @@ This is the same architecture used by:
 
 ---
 
-## 🔹 Phase 5 — Public API & Job Submission (Upcoming)
+## **Phase 5 – Production API Layer**
 
-Phase 5 will turn this backend into a **real product**.
+This phase turned the system from “AWS pipeline” into a **real backend service**.
 
-We will build:
+### 🎯 Goal
 
-### API Layer
+Expose the media pipeline through a proper FastAPI backend so clients no longer need to touch AWS directly.
 
-* FastAPI service on ECS
-* Exposed via Application Load Balancer
+### What was built
 
-### Upload Flow
+We created a **production-grade API** running on ECS:
 
-* Client requests upload
-* API generates **pre-signed S3 URL**
-* Client uploads directly to S3
+```
+Client → API → S3 → SQS → Step Functions → ECS → DynamoDB → S3
+```
 
-### Job Creation
+### Key components
 
-* API writes job record to DynamoDB
-* Sends message to SQS
-* Pipeline starts automatically
+#### 1. FastAPI backend
 
-### Job Tracking
+The API runs in ECS behind an ALB and exposes:
 
-* Client can:
+| Endpoint                    | Purpose                         |
+| --------------------------- | ------------------------------- |
+| POST /media/upload/init     | Generates a presigned S3 URL    |
+| POST /media/upload/complete | Creates job & triggers pipeline |
+| GET /jobs/{jobId}           | Fetches job status              |
+| GET /health                 | Health check                    |
 
-  * Poll job status
-  * Or receive webhook when completed
+#### 2. Presigned S3 upload
 
-This will make the system usable by:
+Uploads are now done securely:
 
-* Web apps
-* Mobile apps
-* Other services
+```
+Client → API → presigned S3 URL
+Client → S3 (direct upload)
+```
+
+This prevents API servers from handling large files and reduces cost.
+
+#### 3. Job creation
+
+When upload completes:
+
+* API creates a job record in DynamoDB
+* API pushes job to SQS
+* Dispatcher Lambda starts Step Functions
+
+The entire AWS pipeline is now **API-driven**.
 
 ---
 
-## Where I are now
+## **Phase 6 – Secure Multi-User SaaS**
 
-I have completed:
+This phase converted the system into a **true SaaS platform** with user isolation.
 
-* Phase 0 – Architecture & Vision
-* Phase 1 – AWS Networking, Storage, IAM
-* Phase 2 – Serverless Orchestration (SQS + Lambdas + Step Functions)
-* Phase 3 – ECS Cluster & Compute
-* Phase 4 – Multi-Worker Processing Engine
+### 🎯 Goal
 
-Next:
-👉 Phase 5 will make it **public and usable**.
+Ensure every job belongs to a user and cannot be accessed by anyone else.
+
+---
+
+### 🔐 JWT Authentication
+
+All protected endpoints now require:
+
+```
+Authorization: Bearer <JWT>
+```
+
+Tokens must contain:
+
+```
+sub = userId
+exp = expiry
+```
+
+The API validates and attaches the user to every request.
+
+---
+
+### 👤 User ownership enforced
+
+All jobs now contain:
+
+```
+jobId
+userId   ← owner
+mediaId
+status
+inputKey
+progress
+```
+
+When querying a job:
+
+```
+GET /jobs/{jobId}
+```
+
+The API checks:
+
+```
+job.userId == token.sub
+```
+
+If not → returns 404 (even if the job exists).
+
+This prevents:
+
+* Data leaks
+* ID guessing
+* Cross-user access
+
+---
+
+### 🔗 End-to-end user-aware pipeline
+
+User ID now flows through:
+
+```
+API → DynamoDB → SQS → Step Functions → ECS Workers → DynamoDB
+```
+
+Every job is traceable to a real user.
+
+This is what makes the system **commercially viable**.
+
+---
+
+### What we achieved by Phase 6
+
+You now have:
+
+* A production API
+* Secure authentication
+* Per-user job isolation
+* Fully automated AWS media pipeline
+* End-to-end SaaS architecture
+
+It is a **cloud-native media processing platform**.
 
 ---

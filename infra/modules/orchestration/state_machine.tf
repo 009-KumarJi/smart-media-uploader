@@ -80,6 +80,10 @@ resource "aws_sfn_state_machine" "pipeline" {
                   {
                     Name  = "JOBS_TABLE"
                     Value = "smmu-${var.env}-jobs"
+                  },
+                  { 
+                    Name: "USER_ID", 
+                    "Value.$": "$.userId" 
                   }
                 ]
               }
@@ -134,13 +138,17 @@ resource "aws_sfn_state_machine" "pipeline" {
                   { 
                     Name = "JOBS_TABLE"
                     Value    = "smmu-${var.env}-jobs" 
+                  },
+                  { 
+                    Name: "USER_ID", 
+                    "Value.$": "$.userId" 
                   }
                 ]
               }
             ]
           }
         }
-        
+
         ResultPath = "$.ecs"
         Next = "MarkCompleted"
       }

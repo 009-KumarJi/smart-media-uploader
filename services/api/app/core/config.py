@@ -1,3 +1,4 @@
+# config.py
 import os
 
 RAW_BUCKET = os.getenv("RAW_BUCKET", "smmu-dev-raw-media")

@@ -12,6 +12,7 @@ def main():
     job_id = os.environ["JOB_ID"]
     input_key = os.environ["INPUT_KEY"]
     output_key = os.environ["OUTPUT_KEY"]
+    user_id = os.environ["USER_ID"]
 
     bucket = input_key.split("/")[2]
     key = "/".join(input_key.split("/")[3:])
@@ -39,11 +40,15 @@ def main():
     print("Updating DynamoDB...")
     table = dynamodb.Table(JOBS_TABLE)
     table.update_item(
-        Key={"jobId": job_id},
+        Key={
+            "jobId": job_id,
+            "userId": user_id
+        },
         UpdateExpression="SET #s = :s",
         ExpressionAttributeNames={"#s": "status"},
         ExpressionAttributeValues={":s": "TRANSCODED"}
     )
+
 
     print("Done.")
 

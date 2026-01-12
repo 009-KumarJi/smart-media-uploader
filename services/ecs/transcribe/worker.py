@@ -15,6 +15,7 @@ def main():
     input_key = os.environ["INPUT_KEY"]
     output_key = os.environ["OUTPUT_KEY"]
     table = os.environ["JOBS_TABLE"]
+    user_id = os.environ["USER_ID"]
 
     print("Starting transcription for", job_id)
 
@@ -31,12 +32,14 @@ def main():
         Body=transcript.encode()
     )
 
-    dynamodb.update_item(
-        TableName=table,
-        Key={"jobId": {"S": job_id}},
+    table.update_item(
+        Key={
+            "jobId": job_id,
+            "userId": user_id
+        },
         UpdateExpression="SET #s = :s",
         ExpressionAttributeNames={"#s": "status"},
-        ExpressionAttributeValues={":s": {"S": "TRANSCRIBED"}}
+        ExpressionAttributeValues={":s": "TRANSCRIBED"}
     )
 
     print("Transcription done")

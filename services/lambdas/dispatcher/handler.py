@@ -23,6 +23,7 @@ def handler(event, context):
             continue   # <-- do NOT crash
 
         job_id = payload["jobId"]
+        user_id = payload["userId"]
 
         print("Starting Step Function for", job_id)
 
@@ -32,9 +33,14 @@ def handler(event, context):
         )
 
         table = dynamodb.Table(JOBS_TABLE)
+
         table.update_item(
-            Key={"jobId": job_id},
+            Key={
+                "jobId": job_id,
+                "userId": user_id
+            },
             UpdateExpression="SET #s = :s",
             ExpressionAttributeNames={"#s": "status"},
             ExpressionAttributeValues={":s": "RUNNING"}
         )
+
