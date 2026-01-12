@@ -99,8 +99,49 @@ resource "aws_sfn_state_machine" "pipeline" {
       }
 
       AudioPipeline = {
-        Type = "Pass"
-        Result = { "message": "audio pipeline placeholder" }
+        Type     = "Task"
+        Resource = "arn:aws:states:::ecs:runTask.sync"
+
+        Parameters = {
+          Cluster        = "arn:aws:ecs:ap-south-1:${data.aws_caller_identity.current.account_id}:cluster/smmu-${var.env}-cluster"
+          LaunchType     = "FARGATE"
+          TaskDefinition = "arn:aws:ecs:ap-south-1:${data.aws_caller_identity.current.account_id}:task-definition/smmu-${var.env}-transcribe"
+
+          NetworkConfiguration = {
+            AwsvpcConfiguration = {
+              Subnets        = var.public_subnets
+              AssignPublicIp = "ENABLED"
+            }
+          }
+
+          Overrides = {
+            ContainerOverrides = [
+              {
+                Name = "transcribe"
+                Environment = [
+                  { 
+                    Name = "JOB_ID" 
+                    "Value.$" = "$.jobId" 
+                  },
+                  { 
+                    Name = "INPUT_KEY" 
+                    "Value.$" = "$.inputKey" 
+                  },
+                  { 
+                    Name = "OUTPUT_KEY"
+                    "Value.$" = "States.Format('s3://smmu-${var.env}-processed-media/transcripts/{}.txt', $.jobId)" 
+                  },
+                  { 
+                    Name = "JOBS_TABLE"
+                    Value    = "smmu-${var.env}-jobs" 
+                  }
+                ]
+              }
+            ]
+          }
+        }
+        
+        ResultPath = "$.ecs"
         Next = "MarkCompleted"
       }
 

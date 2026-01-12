@@ -51,7 +51,7 @@ DynamoDB (Job Status + Metadata)
 
 # 🚀 Development Phases
 
-## **Phase 0 — Infrastructure Foundation**
+## 🏗️ **Phase 0 — Infrastructure Foundation**
 
 **Goal:** Create a production-grade AWS foundation using Terraform and CI/CD.
 
@@ -99,7 +99,7 @@ DynamoDB (Job Status + Metadata)
 
 ---
 
-## **Phase 1 — API Layer (FastAPI on ECS)**
+## 🔌 **Phase 1 — API Layer (FastAPI on ECS)**
 
 **Goal:** Expose a production-grade API.
 
@@ -131,7 +131,7 @@ DynamoDB (Job Status + Metadata)
 
 ---
 
-## **Phase 2 — Asynchronous Workflow Engine**
+## ⚡ **Phase 2 — Asynchronous Workflow Engine**
 
 This is where the system became **distributed**.
 
@@ -204,7 +204,7 @@ This proves:
 
 ---
 
-# 🧩 Phase 3 — Distributed ECS Workers (Media Processing Layer)
+## 🧩 Phase 3 — Distributed ECS Workers (Media Processing Layer)
 
 ## Goal
 
@@ -318,27 +318,191 @@ I understood:
 
 ---
 
-# 🚀 Phase 4 — Multi-Pipeline Expansion (Upcoming)
+## 🔹 Phase 4 — Multi-Worker Media Processing (ECS Integration)
 
-Phase 4 will extend the platform into a **full media processing engine**.
+In Phase 4 we transformed the system from a “single worker pipeline” into a **true distributed media processing platform**.
 
-## What will be added
+This phase added **multiple ECS workers** and wired them into the **Step Functions brain**, allowing different media types to be processed by different containers.
 
-| Feature            | What it enables          |
-| ------------------ | ------------------------ |
-| Video pipeline     | Video transcoding        |
-| Audio pipeline     | Speech-to-text           |
-| Media type routing | Smart pipeline selection |
-| Progress tracking  | Real job lifecycle       |
-| Webhooks           | Notify external systems  |
-| Retry + DLQ logic  | Production reliability   |
+---
 
-The platform will evolve from:
+### What we built
 
-> “An image processor”
+We introduced **two independent ECS workers**:
 
-to
+| Worker                | Purpose                                         |
+| --------------------- | ----------------------------------------------- |
+| **Transcode Worker**  | Processes images (and currently MP4 test media) |
+| **Transcribe Worker** | Extracts / transcribes audio from media         |
 
-> “A distributed, fault-tolerant media processing backend”
+Each worker:
+
+* Runs as an **ECS Fargate task**
+* Pulls its own Docker image from **ECR**
+* Uses **IAM roles** to securely access S3, DynamoDB, and CloudWatch
+* Writes its own logs to **CloudWatch**
+
+---
+
+### Step Functions Brain (Upgraded)
+
+The Step Functions pipeline was upgraded from simple Lambdas to a **hybrid orchestration engine**:
+
+```
+SQS → Dispatcher Lambda → Step Functions
+                           |
+                    Detect Media Type
+                           |
+          ┌───────────┬────────────┬───────────┐
+          │           │            │
+       Image        Audio         Video
+          │           │            │
+   ECS Transcode  ECS Transcribe   (Parked)
+          │           │
+     Update Status  Update Status
+```
+
+The key architectural change:
+
+> **Lambdas decide.
+> ECS does the heavy work.**
+
+Step Functions now launches **Fargate tasks** directly using:
+
+```
+arn:aws:states:::ecs:runTask.sync
+```
+
+This allows:
+
+* Real compute
+* Long-running jobs
+* Large media files
+* Horizontal scaling
+
+---
+
+### What problems solved
+
+This phase required solving real production-grade problems:
+
+### 🔹 ECR & IAM
+
+* Workers initially failed to pull images
+* Fixed by attaching:
+
+  ```
+  AmazonECSTaskExecutionRolePolicy
+  ```
+
+  to ECS task roles
+
+### 🔹 CloudWatch Logs
+
+* ECS tasks crashed because log groups didn’t exist
+* Fixed by provisioning:
+
+  ```
+  /ecs/smmu-dev-transcode
+  /ecs/smmu-dev-transcribe
+  ```
+
+### 🔹 S3 Permissions
+
+* Workers failed with 403 / 404 on S3
+* Fixed by adding **bucket-scoped IAM policies**:
+
+  * Read from `smmu-dev-raw-media`
+  * Write to `smmu-dev-processed-media`
+
+### 🔹 Step Functions Data Passing
+
+* ECS environment variables needed `Value.$` JSONPath mapping
+* Step input now cleanly passes:
+
+  * jobId
+  * inputKey
+  * outputKey
+  * table name
+
+---
+
+## Result
+
+At the end of Phase 4, the system became:
+
+> **A real distributed compute pipeline**
+
+You can now:
+
+1. Send a job to SQS
+2. Dispatcher triggers Step Functions
+3. Step Functions chooses the worker
+4. ECS runs a container
+5. Worker downloads media from S3
+6. Processes it
+7. Uploads result
+8. Updates DynamoDB
+9. Step Functions completes
+
+This is the same architecture used by:
+
+* Netflix
+* AWS MediaConvert
+* AI inference pipelines
+* SaaS background job platforms
+
+---
+
+## 🔹 Phase 5 — Public API & Job Submission (Upcoming)
+
+Phase 5 will turn this backend into a **real product**.
+
+We will build:
+
+### API Layer
+
+* FastAPI service on ECS
+* Exposed via Application Load Balancer
+
+### Upload Flow
+
+* Client requests upload
+* API generates **pre-signed S3 URL**
+* Client uploads directly to S3
+
+### Job Creation
+
+* API writes job record to DynamoDB
+* Sends message to SQS
+* Pipeline starts automatically
+
+### Job Tracking
+
+* Client can:
+
+  * Poll job status
+  * Or receive webhook when completed
+
+This will make the system usable by:
+
+* Web apps
+* Mobile apps
+* Other services
+
+---
+
+## Where I are now
+
+I have completed:
+
+* Phase 0 – Architecture & Vision
+* Phase 1 – AWS Networking, Storage, IAM
+* Phase 2 – Serverless Orchestration (SQS + Lambdas + Step Functions)
+* Phase 3 – ECS Cluster & Compute
+* Phase 4 – Multi-Worker Processing Engine
+
+Next:
+👉 Phase 5 will make it **public and usable**.
 
 ---

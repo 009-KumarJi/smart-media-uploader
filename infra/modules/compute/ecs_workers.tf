@@ -97,3 +97,29 @@ resource "aws_ecs_task_definition" "transcode" {
     }
   ])
 }
+
+resource "aws_ecs_task_definition" "transcribe" {
+  family                   = "smmu-${var.env}-transcribe"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "1024"
+  memory                   = "2048"
+  execution_role_arn       = aws_iam_role.ecs_worker.arn
+  task_role_arn            = aws_iam_role.ecs_worker.arn
+
+  container_definitions = jsonencode([
+    {
+      name      = "transcribe"
+      image     = aws_ecr_repository.transcribe.repository_url
+      essential = true
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = "/ecs/smmu-${var.env}-transcribe"
+          awslogs-region        = var.aws_region
+          awslogs-stream-prefix = "ecs"
+        }
+      }
+    }
+  ])
+}
