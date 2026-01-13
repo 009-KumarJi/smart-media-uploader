@@ -28,7 +28,7 @@ resource "aws_ecs_service" "api" {
   name            = "smmu-${var.env}-api"
   cluster         = aws_ecs_cluster.this.id
   task_definition = aws_ecs_task_definition.api.arn
-  desired_count   = 0
+  desired_count   = 1
   launch_type     = "FARGATE"
 
   network_configuration {
