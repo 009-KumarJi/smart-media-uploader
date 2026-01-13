@@ -42,6 +42,21 @@ jobs:
           zip -r update-status.zip .
           mv update-status.zip ../../../infra/modules/orchestration/
 
+          cd ../job-stream-broadcaster
+          zip -r job-stream-broadcaster.zip .
+          mv job-stream-broadcaster.zip ../../../infra/modules/orchestration/
+
+          cd ../ws/ws-connect
+          zip -r ws-connect.zip .
+          mv ws-connect.zip ../../../infra/modules/orchestration/
+
+          cd ../ws/ws-disconnect
+          zip -r ws-disconnect.zip .
+          mv ws-disconnect.zip ../../../infra/modules/orchestration/
+
+          cd ../ws/ws-subscribe
+          zip -r ws-subscribe.zip .
+          mv ws-subscribe.zip ../../../infra/modules/orchestration/
 
       - name: Terraform Apply
         run: terraform apply -auto-approve
