@@ -27,3 +27,15 @@ def get_job_status(job_id: str, request: Request):
         raise HTTPException(status_code=404, detail="Job not found") 
 
     return item
+
+@router.get("/jobs", dependencies=[Depends(verify_token)])
+def list_jobs(req: Request):
+    user_id = req.state.user["sub"]
+    table = dynamodb.Table(JOBS_TABLE)
+
+    res = table.scan(
+        FilterExpression="userId = :u",
+        ExpressionAttributeValues={":u": user_id}
+    )
+
+    return res.get("Items", [])

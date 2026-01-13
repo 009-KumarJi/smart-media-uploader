@@ -33,6 +33,7 @@ module "orchestration" {
   source          = "../../modules/orchestration"
   env             = var.env
   jobs_queue_arn  = module.messaging.jobs_queue_arn
+  jobs_stream_arn = module.data.jobs_stream_arn
 
   ecs_cluster_arn     = module.compute.ecs_cluster_arn
   transcode_task_arn  = module.compute.transcode_task_arn

@@ -84,6 +84,14 @@ resource "aws_sfn_state_machine" "pipeline" {
                   { 
                     Name: "USER_ID", 
                     "Value.$": "$.userId" 
+                  },
+                  {
+                    "Name": "RAW_BUCKET",
+                    "Value": "smmu-${var.env}-raw-media"
+                  },
+                  {
+                    "Name": "PROCESSED_BUCKET",
+                    "Value": "smmu-${var.env}-processed-media"
                   }
                 ]
               }
@@ -97,10 +105,42 @@ resource "aws_sfn_state_machine" "pipeline" {
       }
 
       VideoPipeline = {
-        Type = "Pass"
-        Result = { "message": "video pipeline placeholder" }
+        Type     = "Task"
+        Resource = "arn:aws:states:::ecs:runTask.sync"
+
+        Parameters = {
+          Cluster        = var.ecs_cluster_arn
+          LaunchType     = "FARGATE"
+          TaskDefinition = var.transcode_task_arn
+
+          NetworkConfiguration = {
+            AwsvpcConfiguration = {
+              Subnets        = var.public_subnets
+              AssignPublicIp = "ENABLED"
+            }
+          }
+
+          Overrides = {
+            ContainerOverrides = [
+              {
+                Name = "transcode"
+                Environment = [
+                  { Name = "JOB_ID",    "Value.$" = "$.jobId" },
+                  { Name = "INPUT_KEY","Value.$" = "$.inputKey" },
+                  { Name = "USER_ID",  "Value.$" = "$.userId" },
+                  { Name = "RAW_BUCKET",       Value = "smmu-${var.env}-raw-media" },
+                  { Name = "PROCESSED_BUCKET", Value = "smmu-${var.env}-processed-media" },
+                  { Name = "JOBS_TABLE",       Value = "smmu-${var.env}-jobs" }
+                ]
+              }
+            ]
+          }
+        }
+
+        ResultPath = "$.ecs"
         Next = "MarkCompleted"
       }
+
 
       AudioPipeline = {
         Type     = "Task"

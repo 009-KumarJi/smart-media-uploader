@@ -3,7 +3,7 @@ def handler(event, context):
 
     job_id = payload["jobId"]
 
-    required = ["jobId", "type", "inputKey"]
+    required = ["jobId", "userId", "inputKey"]
 
     for r in required:
         if r not in payload:

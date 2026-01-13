@@ -18,3 +18,5 @@ variable "transcode_task_arn" {
 variable "public_subnets" {
   type = list(string)
 }
+
+variable "jobs_stream_arn" {}

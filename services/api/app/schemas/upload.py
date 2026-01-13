@@ -6,11 +6,10 @@ class UploadInitRequest(BaseModel):
 
 
 class UploadInitResponse(BaseModel):
-    mediaId: str
+    uploadId: str
     s3Key: str
     uploadUrl: str
 
 
 class UploadCompleteRequest(BaseModel):
-    mediaId: str
-    s3Key: str
+    uploadId: str
