@@ -25,27 +25,34 @@ jobs:
 
       - name: Build Lambda packages
         run: |
-          # Define the base directory for lambdas and destination
-          LAMBDA_DIR="services/lambdas"
-          DEST_DIR="infra/modules/orchestration"
+          # Use absolute path for destination
+          DEST_DIR="$GITHUB_WORKSPACE/infra/modules/orchestration"
+          mkdir -p $DEST_DIR
           
-          # Function to zip without boto3
           build_lambda() {
             local folder=$1
             local name=$2
             echo "Building $name..."
-            cd $LAMBDA_DIR/$folder
-            # Only install requirements if a requirements.txt exists 
-            # and it's NOT just boto3
+            
+            # Move into the specific lambda folder
+            cd "$GITHUB_WORKSPACE/services/lambdas/$folder"
+            
+            # Clean up old zips if they exist
+            rm -f "$name.zip"
+            
             if [ -f "requirements.txt" ]; then
               pip install -r requirements.txt -t .
             fi
+            
             zip -r "$name.zip" . -x "*.pyc" "__pycache__/*"
-            mv "$name.zip" "../../../$DEST_DIR/"
-            cd ../../../
+            
+            # Move using absolute path
+            mv "$name.zip" "$DEST_DIR/"
+            
+            # Return to workspace root
+            cd "$GITHUB_WORKSPACE"
           }
 
-          # Execute builds (No need to pip install boto3)
           build_lambda "dispatcher" "dispatcher"
           build_lambda "validate_input" "validate-input"
           build_lambda "detect_type" "detect-type"
