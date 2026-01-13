@@ -16,47 +16,48 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       - uses: hashicorp/setup-terraform@v3
+
+      - name: Build Lambda packages
+        run: |
+          # Define the base directory for lambdas and destination
+          LAMBDA_DIR="services/lambdas"
+          DEST_DIR="infra/modules/orchestration"
+          
+          # Function to zip without boto3
+          build_lambda() {
+            local folder=$1
+            local name=$2
+            echo "Building $name..."
+            cd $LAMBDA_DIR/$folder
+            # Only install requirements if a requirements.txt exists 
+            # and it's NOT just boto3
+            if [ -f "requirements.txt" ]; then
+              pip install -r requirements.txt -t .
+            fi
+            zip -r "$name.zip" . -x "*.pyc" "__pycache__/*"
+            mv "$name.zip" "../../../$DEST_DIR/"
+            cd ../../../
+          }
+
+          # Execute builds (No need to pip install boto3)
+          build_lambda "dispatcher" "dispatcher"
+          build_lambda "validate_input" "validate-input"
+          build_lambda "detect_type" "detect-type"
+          build_lambda "update_status" "update-status"
+          build_lambda "job-stream-broadcaster" "job-stream-broadcaster"
+          build_lambda "ws/ws-connect" "ws-connect"
+          build_lambda "ws/ws-disconnect" "ws-disconnect"
+          build_lambda "ws/ws-subscribe" "ws-subscribe"
 
       - name: Terraform Init
         run: terraform init
         working-directory: infra/envs/dev
-
-      - name: Build Lambda packages
-        run: |
-          cd services/lambdas/dispatcher
-          pip install boto3 -t .
-          zip -r dispatcher.zip .
-          mv dispatcher.zip ../../../infra/modules/orchestration/
-
-          cd ../validate_input
-          zip -r validate-input.zip .
-          mv validate-input.zip ../../../infra/modules/orchestration/
-
-          cd ../detect_type
-          zip -r detect-type.zip .
-          mv detect-type.zip ../../../infra/modules/orchestration/
-
-          cd ../update_status
-          pip install boto3 -t .
-          zip -r update-status.zip .
-          mv update-status.zip ../../../infra/modules/orchestration/
-
-          cd ../job-stream-broadcaster
-          zip -r job-stream-broadcaster.zip .
-          mv job-stream-broadcaster.zip ../../../infra/modules/orchestration/
-
-          cd ../ws/ws-connect
-          zip -r ws-connect.zip .
-          mv ws-connect.zip ../../../infra/modules/orchestration/
-
-          cd ../ws/ws-disconnect
-          zip -r ws-disconnect.zip .
-          mv ws-disconnect.zip ../../../infra/modules/orchestration/
-
-          cd ../ws/ws-subscribe
-          zip -r ws-subscribe.zip .
-          mv ws-subscribe.zip ../../../infra/modules/orchestration/
 
       - name: Terraform Apply
         run: terraform apply -auto-approve
